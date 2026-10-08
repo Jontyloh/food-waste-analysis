@@ -234,7 +234,7 @@ footer ul { margin: 0; padding-left: 18px; }
     <div class="calc">
       <div class="sliders">
         <div class="slider"><label for="s-meals">Meals cooked for no-shows, per day <output id="o-meals"></output></label>
-          <input id="s-meals" type="range" min="10" max="1000" step="5" value="75"></div>
+          <input id="s-meals" type="range" min="10" max="1000" step="5" value="150"></div>
         <div class="slider"><label for="s-rate">Share of those meals notified in advance <output id="o-rate"></output></label>
           <input id="s-rate" type="range" min="0" max="100" step="5" value="50"></div>
         <div class="slider"><label for="s-days">Days the mess runs per year <output id="o-days"></output></label>
@@ -577,7 +577,7 @@ footer ul { margin: 0; padding-left: 18px; }
   // ---------- Calculator ----------
   const S = id => document.getElementById(id);
   const MESS_STUDENTS = 1300, MEALS_PER_STUDENT = 4;
-  const defaults = { "s-meals": 75, "s-rate": 50, "s-days": 365, "s-kg": 0.4, "s-rs": 70 };
+  const defaults = { "s-meals": 150, "s-rate": 50, "s-days": 365, "s-kg": 0.4, "s-rs": 70 };
   function renderCalc() {
     const meals = +S("s-meals").value, rate = +S("s-rate").value / 100, days = +S("s-days").value;
     const kg = +S("s-kg").value, rs = +S("s-rs").value;
@@ -589,7 +589,7 @@ footer ul { margin: 0; padding-left: 18px; }
     const saved = meals * days * rate;
     const lakh = saved * rs / 100000;
     S("r-rs").textContent = lakh >= 100 ? `₹${fmt(lakh / 100, 2)} crore` : `₹${fmt(lakh, 1)} lakh`;
-    S("r-t").textContent = `${fmt(saved * kg / 1000, 1)} tonnes`;
+    S("r-t").textContent = `${fmt(saved * kg / 1000 + 1e-9, 1)} tonnes`;  // +1e-9 so 10.95 rounds up
     S("r-meals").textContent = fmt(saved);
 
     // Whole-mess context: 1,300 students x 4 meals a day, at the same cost and days as the sliders

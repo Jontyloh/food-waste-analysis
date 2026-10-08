@@ -33,9 +33,9 @@ values are removed. Food waste at home is a habit-and-planning problem everywher
 
 **4. A single hostel mess matters.** The IIM Bangalore mess cooks about **5,200 meals a day**
 (1,300 students × 4 meals), roughly **₹13.3 crore of food a year** at ₹70 a meal. On rough estimates
-(50–100 of those meals cooked for students who don't turn up, 0.4 kg per meal), it could waste
-**7–15 tonnes of food, worth about ₹13–26 lakh, a year**. If half of skipped meals were notified in advance, about
-**₹10 lakh and 5.5 tonnes a year** could be saved (middle estimate).
+(150–250 of those meals cooked for students who don't turn up, 0.4 kg per meal), it could waste
+**22–37 tonnes of food, worth about ₹38–64 lakh, a year**. Even at the low end, if half of skipped meals
+were notified in advance, about **₹20 lakh and 11 tonnes a year** could be saved.
 
 ![Savings from advance notice](charts/04_mess_savings_scenarios.png)
 
