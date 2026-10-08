@@ -4,6 +4,11 @@ A short Python analysis of the **UN Food Waste Index** (2022): how much food eac
 per year, where in the food chain it happens, how India compares, and whether richer countries
 waste more.
 
+### ▶ [Open the interactive dashboard](https://jontyloh.github.io/food-waste-analysis/)
+
+Compare any country with India, explore wealth vs waste with live correlation, and try the hostel
+mess savings calculator. No install needed.
+
 I built this alongside **Mess Saver**, an app that helps IIM Bangalore students give the hostel
 mess advance notice of meals they will miss, so less food is cooked and wasted.
 
@@ -40,6 +45,8 @@ worth about ₹13–26 lakh, a year**. If half of skipped meals were notified in
 | [`food_waste_analysis.ipynb`](food_waste_analysis.ipynb) | The full analysis: loading, cleaning, charts and findings |
 | `data/` | Source CSV files, downloaded from Our World in Data |
 | `charts/` | Charts saved by the notebook |
+| `docs/` | The interactive dashboard (HTML + JavaScript, hosted on GitHub Pages) |
+| `scripts/build_dashboard_data.py` | Prepares the dashboard's data with the same cleaning as the notebook |
 | `requirements.txt` | Python packages needed |
 
 ## Method in brief

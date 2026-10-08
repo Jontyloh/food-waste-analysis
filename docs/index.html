@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Food Waste Explorer</title>
+<meta name="description" content="Interactive look at the UN Food Waste Index 2022: where food is wasted, how India compares, whether wealth matters, and what advance notice could save a hostel mess.">
+<meta property="og:title" content="Food Waste Explorer">
+<meta property="og:description" content="Where the world wastes its food, how India compares, and what advance notice could save a hostel mess. By Jonty Lohchab, IIM Bangalore.">
+<meta property="og:image" content="https://jontyloh.github.io/food-waste-analysis/preview.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><rect x='7' y='17' width='4' height='8' rx='1' fill='white'/><rect x='14' y='11' width='4' height='14' rx='1' fill='white'/><rect x='21' y='7' width='4' height='18' rx='1' fill='white'/></svg>">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6;  /* household */
+  --s2: #eb6834;  /* out-of-home */
+  --s3: #1baf7a;  /* retail */
+  --dim: #c3c2b7;
+  --accent-wash: rgba(42,120,214,0.10);
+  --tooltip-bg: #0b0b0b;
+  --tooltip-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --dim: #4a4a46;
+    --accent-wash: rgba(57,135,229,0.16); --tooltip-bg: #ffffff; --tooltip-ink: #0b0b0b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --dim: #4a4a46;
+  --accent-wash: rgba(57,135,229,0.16); --tooltip-bg: #ffffff; --tooltip-ink: #0b0b0b;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--s1); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 32px 16px 48px; }
+
+header h1 { font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01em; }
+header p { margin: 0; color: var(--ink-2); max-width: 720px; }
+.byline { margin-top: 12px !important; font-size: 14px; }
+.byline a { margin-left: 4px; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 28px 0 8px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.kpi .v { font-size: 30px; font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; }
+.kpi .v small { font-size: 15px; font-weight: 600; color: var(--ink-2); margin-left: 2px; }
+.kpi .l { color: var(--ink-2); font-size: 14px; margin-top: 6px; }
+
+section.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 22px 18px; margin-top: 20px; }
+section.card h2 { font-size: 20px; margin: 0 0 4px; }
+.lede { color: var(--ink-2); margin: 0 0 14px; max-width: 760px; }
+.finding { margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--accent-wash); color: var(--ink); font-size: 14.5px; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 12px; font-size: 14px; }
+.controls label { color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; }
+input[type=text], select {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--page);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; min-height: 34px;
+}
+input[type=text] { width: 210px; max-width: 100%; }
+button {
+  font: inherit; font-size: 14px; cursor: pointer; border-radius: 8px; min-height: 34px;
+  border: 1px solid var(--border); background: var(--page); color: var(--ink); padding: 6px 12px;
+}
+button:hover { background: var(--accent-wash); }
+:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; padding: 3px 4px 3px 10px; border-radius: 999px; background: var(--page); border: 1px solid var(--border); }
+.chip.fixed { padding-right: 10px; font-weight: 600; }
+.chip button { min-height: 0; border: 0; background: none; padding: 0 6px; font-size: 15px; line-height: 1; color: var(--ink-2); }
+.msg { font-size: 13px; color: var(--ink-2); min-height: 1em; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); margin: 4px 0 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.legend i.dot { border-radius: 50%; }
+
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--ink-2); font-size: 12px; font-family: inherit; }
+svg .lbl-strong { fill: var(--ink); font-weight: 700; }
+svg .grid line { stroke: var(--grid); stroke-width: 1; }
+svg .axis-line { stroke: var(--axis); }
+svg .seg { stroke: var(--surface); stroke-width: 2; cursor: default; }
+svg .seg:hover, svg .seg.hot { filter: brightness(1.12); }
+svg .dot { stroke: var(--surface); stroke-width: 1; }
+.f-s1 { fill: var(--s1); } .f-s2 { fill: var(--s2); } .f-s3 { fill: var(--s3); } .f-dim { fill: var(--dim); }
+.bg-s1 { background: var(--s1); } .bg-s2 { background: var(--s2); } .bg-s3 { background: var(--s3); }
+
+.stat-line { font-size: 14px; color: var(--ink-2); margin: 8px 0 0; }
+.stat-line b { color: var(--ink); }
+
+details { margin-top: 12px; font-size: 14px; }
+summary { cursor: pointer; color: var(--ink-2); }
+.table-wrap { max-height: 320px; overflow: auto; margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { position: sticky; top: 0; background: var(--surface); color: var(--ink-2); font-weight: 600; }
+
+.calc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.sliders { display: grid; gap: 14px; }
+.slider label { display: flex; justify-content: space-between; font-size: 14px; color: var(--ink-2); gap: 12px; }
+.slider output { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+.slider input { width: 100%; accent-color: var(--s1); margin: 6px 0 0; }
+.results { display: grid; gap: 10px; }
+.result { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--page); }
+.result .v { font-size: 28px; font-weight: 700; line-height: 1.1; }
+.result .l { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+.scale-box { border: 1px dashed var(--axis); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; }
+.scale-title { font-weight: 700; margin-bottom: 6px; }
+.scale-row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; color: var(--ink-2); }
+.scale-row b { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scale-row.share { border-top: 1px solid var(--grid); margin-top: 4px; padding-top: 7px; }
+
+footer { margin-top: 28px; color: var(--ink-2); font-size: 13.5px; }
+footer h3 { font-size: 15px; color: var(--ink); margin: 18px 0 6px; }
+footer ul { margin: 0; padding-left: 18px; }
+
+#tip {
+  position: fixed; pointer-events: none; z-index: 10; max-width: 240px;
+  background: var(--tooltip-bg); color: var(--tooltip-ink); border-radius: 8px;
+  padding: 8px 10px; font-size: 13px; line-height: 1.4; box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  opacity: 0; transition: opacity 0.08s;
+}
+#tip.on { opacity: 1; }
+#tip .tv { font-size: 16px; font-weight: 700; }
+#tip .tr { display: flex; align-items: center; gap: 6px; }
+#tip .key { width: 10px; height: 2px; border-radius: 1px; display: inline-block; }
+#tip .sub { opacity: 0.75; }
+
+@media (max-width: 720px) {
+  .wrap { padding-top: 22px; }
+  section.card { padding: 16px 14px 14px; }
+  .calc { grid-template-columns: 1fr; }
+  .kpi .v { font-size: 26px; }
+}
+@media (forced-colors: active) {
+  .seg, .dot { stroke: CanvasText; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Where does the world waste its food?</h1>
+    <p>An interactive look at the UN Food Waste Index (2022): how many kilograms of food each person wastes a year, where it happens, how India compares, and what giving a hostel mess advance notice could save.</p>
+    <p class="byline">By <b>Jonty Lohchab</b>, IIM Bangalore ·
+      <a href="https://github.com/Jontyloh/food-waste-analysis">Code &amp; full analysis on GitHub</a></p>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section class="card" aria-labelledby="h-compare">
+    <h2 id="h-compare">Compare countries</h2>
+    <p class="lede">Food wasted per person per year, split by where it happens. Add any country to compare it with India and the world average.</p>
+    <div class="controls">
+      <label for="add-country">Add a country</label>
+      <input id="add-country" type="text" list="country-list" placeholder="Start typing, e.g. Kenya" autocomplete="off">
+      <datalist id="country-list"></datalist>
+      <button id="add-btn" type="button">Add</button>
+      <label>Sort by
+        <select id="sort-by">
+          <option value="total">Total</option>
+          <option value="household">Household</option>
+          <option value="outOfHome">Out-of-home</option>
+          <option value="retail">Retail</option>
+        </select>
+      </label>
+    </div>
+    <div class="chips" id="chips" aria-label="Countries shown"></div>
+    <div class="msg" id="add-msg" role="status"></div>
+    <div class="legend">
+      <span><i class="bg-s1"></i>Household</span>
+      <span><i class="bg-s2"></i>Out-of-home (restaurants, canteens, messes)</span>
+      <span><i class="bg-s3"></i>Retail (shops)</span>
+    </div>
+    <div class="chart" id="compare-chart"></div>
+    <details>
+      <summary>Show as a table</summary>
+      <div class="table-wrap"><table id="compare-table"></table></div>
+    </details>
+    <p class="finding" id="compare-finding"></p>
+  </section>
+
+  <section class="card" aria-labelledby="h-wealth">
+    <h2 id="h-wealth">Do richer countries waste more at home?</h2>
+    <p class="lede">Each dot is a country. Filter by continent, or hide values the UN likely estimated rather than measured, and watch the correlation update.</p>
+    <div class="controls">
+      <label>Continent
+        <select id="region"><option value="">All</option></select>
+      </label>
+      <label><input type="checkbox" id="hide-est"> Hide likely-estimated values</label>
+      <label for="find-country">Find</label>
+      <input id="find-country" type="text" list="country-list" placeholder="Highlight a country" autocomplete="off">
+    </div>
+    <div class="legend">
+      <span><i class="dot bg-s1"></i>Country</span>
+      <span><i class="dot bg-s2"></i>India</span>
+    </div>
+    <div class="chart" id="scatter-chart"></div>
+    <p class="stat-line" id="corr-line"></p>
+    <details>
+      <summary>Show as a table</summary>
+      <div class="table-wrap"><table id="scatter-table"></table></div>
+    </details>
+    <p class="finding" id="wealth-finding"></p>
+  </section>
+
+  <section class="card" aria-labelledby="h-calc">
+    <h2 id="h-calc">What could advance notice save a hostel mess?</h2>
+    <p class="lede">A mess cooks for everyone. When students skip a meal without telling anyone, that food is wasted. Move the sliders to see what advance notice could save in a year. The defaults are working estimates for IIM Bangalore (about 1,300 students eating in the mess).</p>
+    <div class="calc">
+      <div class="sliders">
+        <div class="slider"><label for="s-meals">Meals cooked for no-shows, per day <output id="o-meals"></output></label>
+          <input id="s-meals" type="range" min="10" max="1000" step="5" value="75"></div>
+        <div class="slider"><label for="s-rate">Share of those meals notified in advance <output id="o-rate"></output></label>
+          <input id="s-rate" type="range" min="0" max="100" step="5" value="50"></div>
+        <div class="slider"><label for="s-days">Days the mess runs per year <output id="o-days"></output></label>
+          <input id="s-days" type="range" min="200" max="365" step="5" value="365"></div>
+        <div class="slider"><label for="s-kg">Food per meal (kg) <output id="o-kg"></output></label>
+          <input id="s-kg" type="range" min="0.2" max="0.8" step="0.05" value="0.4"></div>
+        <div class="slider"><label for="s-rs">Cost per meal (₹) <output id="o-rs"></output></label>
+          <input id="s-rs" type="range" min="30" max="150" step="5" value="70"></div>
+        <button id="reset" type="button" style="justify-self:start">Reset to defaults</button>
+      </div>
+      <div class="results" aria-live="polite">
+        <div class="result"><div class="v" id="r-rs"></div><div class="l">saved per year</div></div>
+        <div class="result"><div class="v" id="r-t"></div><div class="l">of food not wasted per year</div></div>
+        <div class="result"><div class="v" id="r-meals"></div><div class="l">meals no longer cooked for empty seats</div></div>
+        <div class="scale-box">
+          <div class="scale-title">For scale: the whole mess</div>
+          <div class="scale-row"><span>1,300 students × 4 meals a day</span><b id="t-meals"></b></div>
+          <div class="scale-row"><span>Cost per day</span><b id="t-day"></b></div>
+          <div class="scale-row"><span>Cost per year</span><b id="t-year"></b></div>
+          <div class="scale-row share"><span>Savings above as a share of all food cooked</span><b id="t-share"></b></div>
+        </div>
+      </div>
+    </div>
+    <p class="finding">This assumes the mess really does cook less when it gets notice. That's exactly what <b>Mess Saver</b>, the app I'm building for IIM Bangalore, is designed to support: students mark skipped meals at least 24 hours ahead, and the mess gets a daily headcount report.</p>
+  </section>
+
+  <footer>
+    <h3>Method and caveats</h3>
+    <ul>
+      <li>Data: UNEP <i>Food Waste Index Report 2024</i> (2022 estimates) and World Bank GDP per capita (PPP, 2022), both via <a href="https://ourworldindata.org/grapher/food-waste-per-capita">Our World in Data</a> (CC BY 4.0).</li>
+      <li>Region rows ("World", "Africa (UN)") and 5 tiny territories reported as 0 kg were removed. That leaves <span id="n-countries"></span> countries.</li>
+      <li>Many values are modelled: where a country has no study, UNEP fills the gap from similar countries. A household value shared exactly with another country is flagged as "likely estimated".</li>
+      <li>The wealth check uses rank (Spearman) correlation, a bootstrap confidence interval and an OLS regression with continent controls. See the <a href="https://github.com/Jontyloh/food-waste-analysis/blob/main/food_waste_analysis.ipynb">notebook</a>.</li>
+      <li>The hostel mess figures are scenario estimates, not measured waste.</li>
+    </ul>
+  </footer>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  "use strict";
+  const D = window.FOOD_WASTE;
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const SECT = [
+    { key: "household", label: "Household", cls: "s1" },
+    { key: "outOfHome", label: "Out-of-home", cls: "s2" },
+    { key: "retail", label: "Retail", cls: "s3" },
+  ];
+  const WORLD = Object.assign({ name: "World", region: null, gdp: null, estimated: false }, D.world);
+  const byName = new Map(D.countries.map(c => [c.name.toLowerCase(), c]));
+  const india = byName.get("india");
+  const fmt = (v, d = 0) => v.toLocaleString("en-IN", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  // ---------- helpers ----------
+  function el(tag, attrs = {}, parent) {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function text(parent, x, y, str, attrs = {}) {
+    const t = el("text", Object.assign({ x, y }, attrs), parent);
+    t.textContent = str;
+    return t;
+  }
+  const tip = document.getElementById("tip");
+  function showTip(evt, rows) {
+    tip.replaceChildren();
+    for (const r of rows) {
+      const line = document.createElement("div");
+      line.className = r.cls || "tr";
+      if (r.key) { const k = document.createElement("span"); k.className = "key"; k.style.background = `var(--${r.key})`; line.appendChild(k); }
+      const s = document.createElement("span"); s.textContent = r.text; line.appendChild(s);
+      tip.appendChild(line);
+    }
+    tip.classList.add("on");
+    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = evt.clientX + pad, y = evt.clientY + pad;
+    if (x + w > innerWidth - 8) x = evt.clientX - w - pad;
+    if (y + h > innerHeight - 8) y = evt.clientY - h - pad;
+    tip.style.left = Math.max(8, x) + "px";
+    tip.style.top = Math.max(8, y) + "px";
+  }
+  function hideTip() { tip.classList.remove("on"); }
+  function fillTable(table, head, rows) {
+    table.replaceChildren();
+    const thead = table.createTHead().insertRow();
+    head.forEach(h => { const th = document.createElement("th"); th.textContent = h; thead.appendChild(th); });
+    const body = table.createTBody();
+    rows.forEach(r => { const tr = body.insertRow(); r.forEach(v => { tr.insertCell().textContent = v; }); });
+  }
+
+  // ---------- KPIs ----------
+  const kpis = [
+    [fmt(WORLD.total), "kg", "of food wasted per person per year, world average (2022)"],
+    [Math.round(WORLD.household / WORLD.total * 100) + "%", "", "of it is wasted at home, not in shops or restaurants"],
+    [fmt(india.total), "kg", `wasted per person in India. Its household waste ranks ${D.stats.indiaHouseholdRank} of ${D.stats.countries} (1 = most)`],
+    [Math.round(D.stats.r2GdpOnly * 100) + "%", "", "of the differences in household waste between countries are explained by wealth (GDP)"],
+  ];
+  const kpiBox = document.getElementById("kpis");
+  for (const [v, unit, l] of kpis) {
+    const d = document.createElement("div"); d.className = "kpi";
+    const vv = document.createElement("div"); vv.className = "v"; vv.textContent = v;
+    if (unit) { const s = document.createElement("small"); s.textContent = unit; vv.appendChild(s); }
+    const ll = document.createElement("div"); ll.className = "l"; ll.textContent = l;
+    d.append(vv, ll); kpiBox.appendChild(d);
+  }
+  document.getElementById("n-countries").textContent = D.stats.countries;
+
+  // ---------- country list ----------
+  const dl = document.getElementById("country-list");
+  D.countries.forEach(c => { const o = document.createElement("option"); o.value = c.name; dl.appendChild(o); });
+
+  // ---------- Compare chart ----------
+  const FIXED = ["India", "World"];
+  let picked = ["China", "United States", "United Kingdom", "Japan", "Pakistan", "Nigeria"];
+  const chipsBox = document.getElementById("chips");
+  const addInput = document.getElementById("add-country");
+  const addMsg = document.getElementById("add-msg");
+  const sortSel = document.getElementById("sort-by");
+  const MAX_PICK = 12;
+
+  function rowsForCompare() {
+    const rows = [india, WORLD, ...picked.map(n => byName.get(n.toLowerCase()))];
+    const k = sortSel.value;
+    return rows.sort((a, b) => b[k] - a[k]);
+  }
+  function addCountry() {
+    const c = byName.get(addInput.value.trim().toLowerCase());
+    if (!c) { addMsg.textContent = addInput.value.trim() ? "No country with that name. Pick one from the list." : ""; return; }
+    if (FIXED.includes(c.name) || picked.includes(c.name)) { addMsg.textContent = `${c.name} is already shown.`; }
+    else if (picked.length >= MAX_PICK) { addMsg.textContent = `Up to ${MAX_PICK} countries. Remove one first.`; }
+    else { picked.push(c.name); addMsg.textContent = `Added ${c.name}.`; }
+    addInput.value = "";
+    renderCompare();
+  }
+  document.getElementById("add-btn").addEventListener("click", addCountry);
+  addInput.addEventListener("keydown", e => { if (e.key === "Enter") addCountry(); });
+  addInput.addEventListener("change", () => { if (byName.has(addInput.value.trim().toLowerCase())) addCountry(); });
+  sortSel.addEventListener("change", renderCompare);
+
+  function renderChips() {
+    chipsBox.replaceChildren();
+    FIXED.forEach(n => { const s = document.createElement("span"); s.className = "chip fixed"; s.textContent = n; chipsBox.appendChild(s); });
+    picked.forEach(n => {
+      const s = document.createElement("span"); s.className = "chip"; s.textContent = n;
+      const b = document.createElement("button"); b.type = "button"; b.textContent = "×";
+      b.setAttribute("aria-label", "Remove " + n);
+      b.addEventListener("click", () => { picked = picked.filter(p => p !== n); addMsg.textContent = `Removed ${n}.`; renderCompare(); });
+      s.appendChild(b); chipsBox.appendChild(s);
+    });
+  }
+
+  function renderCompare() {
+    renderChips();
+    const box = document.getElementById("compare-chart");
+    const rows = rowsForCompare();
+    const W = Math.max(300, box.clientWidth);
+    const narrow = W < 520;
+    const M = { l: narrow ? 92 : 130, r: 44, t: 4, b: 34 };
+    const rowH = 30, barH = 18;
+    const H = M.t + rows.length * rowH + M.b;
+    const maxV = Math.max(...rows.map(r => r.total)) * 1.05;
+    const step = (maxV > 200 || narrow) ? 50 : 25;
+    const x = v => M.l + v / maxV * (W - M.l - M.r);
+
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+      "aria-label": "Stacked bar chart of food waste per person by sector for the selected countries" });
+    const grid = el("g", { class: "grid" }, svg);
+    for (let v = 0; v <= maxV; v += step) {
+      el("line", { x1: x(v), x2: x(v), y1: M.t, y2: H - M.b + 4 }, grid);
+      text(svg, x(v), H - M.b + 18, String(v), { "text-anchor": "middle" });
+    }
+    text(svg, M.l + (W - M.l - M.r) / 2, H - 2, "kg per person per year", { "text-anchor": "middle" });
+
+    rows.forEach((r, i) => {
+      const yc = M.t + i * rowH + rowH / 2;
+      const special = r.name === "India" || r.name === "World";
+      let label = r.name;
+      if (narrow && label.length > 13) label = label.slice(0, 12) + "…";
+      text(svg, M.l - 8, yc + 4, label, { "text-anchor": "end", class: special ? "lbl-strong" : "" });
+      let left = 0;
+      SECT.forEach(s => {
+        const v = r[s.key];
+        const rect = el("rect", { x: x(left), y: yc - barH / 2, width: Math.max(0, x(left + v) - x(left)), height: barH,
+          class: `seg f-${s.cls}`, tabindex: 0, rx: 2,
+          "aria-label": `${r.name}, ${s.label}: ${v} kg` }, svg);
+        const tipRows = [
+          { text: `${fmt(v, 1)} kg`, cls: "tv" },
+          { text: `${s.label} · ${r.name}`, key: s.cls },
+          { text: `Total ${fmt(r.total, 1)} kg${r.estimated ? " · household value likely estimated" : ""}`, cls: "sub" },
+        ];
+        rect.addEventListener("pointermove", e => showTip(e, tipRows));
+        rect.addEventListener("pointerleave", hideTip);
+        rect.addEventListener("focus", () => { const b = rect.getBoundingClientRect(); showTip({ clientX: b.right, clientY: b.top }, tipRows); });
+        rect.addEventListener("blur", hideTip);
+        left += v;
+      });
+      text(svg, x(r.total) + 6, yc + 4, fmt(r.total), {});
+    });
+    el("line", { x1: x(0), x2: x(0), y1: M.t, y2: H - M.b, class: "axis-line" }, svg);
+    box.replaceChildren(svg);
+
+    fillTable(document.getElementById("compare-table"),
+      ["Country", "Household", "Out-of-home", "Retail", "Total (kg)"],
+      rows.map(r => [r.name, fmt(r.household, 1), fmt(r.outOfHome, 1), fmt(r.retail, 1), fmt(r.total, 1)]));
+
+    const f = document.getElementById("compare-finding");
+    f.textContent = `India wastes about ${fmt(india.total)} kg of food per person a year, against a world average of ${fmt(WORLD.total)} kg. `
+      + `At home India wastes ${fmt(india.household)} kg, among the lowest of ${D.stats.countries} countries. Note: India's out-of-home and retail values are identical to Pakistan's and Bangladesh's, so they are regional estimates.`;
+  }
+
+  // ---------- Scatter ----------
+  const regionSel = document.getElementById("region");
+  const hideEst = document.getElementById("hide-est");
+  const findInput = document.getElementById("find-country");
+  [...new Set(D.countries.map(c => c.region).filter(Boolean))].sort().forEach(r => {
+    const o = document.createElement("option"); o.value = r; o.textContent = r; regionSel.appendChild(o);
+  });
+  const withGdp = D.countries.filter(c => c.gdp && c.region);
+
+  function ranks(arr) {
+    const idx = arr.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);
+    const r = new Array(arr.length);
+    for (let i = 0; i < idx.length;) {
+      let j = i; while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++;
+      const avg = (i + j) / 2 + 1;
+      for (let k = i; k <= j; k++) r[idx[k][1]] = avg;
+      i = j + 1;
+    }
+    return r;
+  }
+  function spearman(xs, ys) {
+    const rx = ranks(xs), ry = ranks(ys), n = xs.length;
+    const mx = rx.reduce((a, b) => a + b, 0) / n, my = ry.reduce((a, b) => a + b, 0) / n;
+    let sxy = 0, sxx = 0, syy = 0;
+    for (let i = 0; i < n; i++) { const a = rx[i] - mx, b = ry[i] - my; sxy += a * b; sxx += a * a; syy += b * b; }
+    return sxy / Math.sqrt(sxx * syy);
+  }
+
+  function renderScatter() {
+    const box = document.getElementById("scatter-chart");
+    const W = Math.max(300, box.clientWidth);
+    const narrow = W < 520;
+    const H = narrow ? 320 : 420;
+    const M = { l: 44, r: 16, t: 12, b: 42 };
+    const lx0 = Math.log10(800), lx1 = Math.log10(160000);
+    const yMax = 220;
+    const x = g => M.l + (Math.log10(g) - lx0) / (lx1 - lx0) * (W - M.l - M.r);
+    const y = v => M.t + (1 - v / yMax) * (H - M.t - M.b);
+
+    const region = regionSel.value, hide = hideEst.checked;
+    const inSet = c => (!region || c.region === region) && (!hide || !c.estimated);
+    const found = byName.get(findInput.value.trim().toLowerCase());
+
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
+      "aria-label": "Scatter plot of household food waste against GDP per person, one dot per country" });
+    const grid = el("g", { class: "grid" }, svg);
+    for (let v = 0; v <= 200; v += 50) {
+      el("line", { x1: M.l, x2: W - M.r, y1: y(v), y2: y(v) }, grid);
+      text(svg, M.l - 8, y(v) + 4, String(v), { "text-anchor": "end" });
+    }
+    const ticks = narrow ? [1000, 10000, 100000] : [1000, 3000, 10000, 30000, 100000];
+    ticks.forEach(g => {
+      el("line", { x1: x(g), x2: x(g), y1: M.t, y2: H - M.b }, grid);
+      text(svg, x(g), H - M.b + 18, "$" + (g >= 1000 ? g / 1000 + "k" : g), { "text-anchor": "middle" });
+    });
+    text(svg, M.l + (W - M.l - M.r) / 2, H - 4, "GDP per person, 2022 (log scale)", { "text-anchor": "middle" });
+    text(svg, M.l, M.t - 2, "kg wasted at home, per person per year", { "text-anchor": "start", dy: "-2" });
+
+    const shown = [];
+    const dim = el("g", {}, svg), main = el("g", {}, svg), top = el("g", {}, svg);
+    withGdp.forEach(c => {
+      const on = inSet(c);
+      const cx = x(c.gdp), cy = y(Math.min(c.household, yMax));
+      const isIndia = c.name === "India";
+      const cls = !on ? "f-dim" : isIndia ? "f-s2" : "f-s1";
+      el("circle", { cx, cy, r: isIndia ? 6.5 : 4.5, class: "dot " + cls,
+        "fill-opacity": on ? (isIndia ? 1 : 0.62) : 0.5, "stroke-width": isIndia ? 2 : 1 }, isIndia ? top : on ? main : dim);
+      if (on) shown.push({ c, cx, cy });
+    });
+    if (india && inSet(india)) text(top, x(india.gdp) + 9, y(india.household) + 16, "India", { class: "lbl-strong" });
+    if (found && found.gdp && found.name !== "India") {
+      const fx = x(found.gdp), fy = y(Math.min(found.household, yMax));
+      el("circle", { cx: fx, cy: fy, r: 10, fill: "none", stroke: "var(--ink)", "stroke-width": 2 }, top);
+      const anchorEnd = fx > W - 120;
+      text(top, fx + (anchorEnd ? -14 : 14), fy - 10, found.name, { class: "lbl-strong", "text-anchor": anchorEnd ? "end" : "start" });
+    }
+
+    // nearest-point hover layer (hit radius 24px)
+    const hit = el("rect", { x: M.l, y: M.t, width: W - M.l - M.r, height: H - M.t - M.b, fill: "transparent" }, svg);
+    const ring = el("circle", { r: 8, fill: "none", stroke: "var(--ink)", "stroke-width": 1.5, visibility: "hidden" }, svg);
+    hit.addEventListener("pointermove", e => {
+      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      const scale = svg.getScreenCTM().a || 1;
+      let best = null, bd = Infinity;
+      for (const s of shown) { const d = Math.hypot(s.cx - p.x, s.cy - p.y); if (d < bd) { bd = d; best = s; } }
+      if (!best || bd * scale > 24) { hideTip(); ring.setAttribute("visibility", "hidden"); return; }
+      ring.setAttribute("cx", best.cx); ring.setAttribute("cy", best.cy); ring.setAttribute("visibility", "visible");
+      const c = best.c;
+      showTip(e, [
+        { text: `${fmt(c.household, 1)} kg at home`, cls: "tv" },
+        { text: c.name, key: c.name === "India" ? "s2" : "s1" },
+        { text: `GDP $${fmt(c.gdp)} per person · ${c.region}`, cls: "sub" },
+        ...(c.estimated ? [{ text: "Household value likely estimated", cls: "sub" }] : []),
+      ]);
+    });
+    hit.addEventListener("pointerleave", () => { hideTip(); ring.setAttribute("visibility", "hidden"); });
+    box.replaceChildren(svg);
+
+    const line = document.getElementById("corr-line");
+    line.replaceChildren();
+    if (shown.length >= 8) {
+      const r = spearman(shown.map(s => s.c.gdp), shown.map(s => s.c.household));
+      const strength = Math.abs(r) < 0.1 ? "no" : Math.abs(r) < 0.3 ? "a weak" : Math.abs(r) < 0.5 ? "a moderate" : "a strong";
+      const dir = Math.abs(r) < 0.1 ? "" : r < 0 ? " negative" : " positive";
+      line.append("Rank correlation for the ", Object.assign(document.createElement("b"), { textContent: shown.length + " countries shown" }),
+        ": ", Object.assign(document.createElement("b"), { textContent: (r < 0 ? "−" : "") + Math.abs(r).toFixed(2) }),
+        ` (${strength}${dir} link${shown.length < 30 ? "; few countries, so treat with caution" : ""}).`);
+    } else {
+      line.textContent = `Only ${shown.length} countries match the filters, which is too few for a correlation.`;
+    }
+
+    fillTable(document.getElementById("scatter-table"),
+      ["Country", "Continent", "GDP per person ($)", "Household (kg)", "Likely estimated"],
+      shown.map(s => s.c).sort((a, b) => a.name.localeCompare(b.name))
+        .map(c => [c.name, c.region, fmt(c.gdp), fmt(c.household, 1), c.estimated ? "yes" : ""]));
+
+    document.getElementById("wealth-finding").textContent =
+      `Across all ${D.stats.withGdp} countries the link is weak (${(D.stats.rankCorr < 0 ? "−" : "") + Math.abs(D.stats.rankCorr).toFixed(2)}), and wealth explains only about ${Math.round(D.stats.r2GdpOnly * 100)}% of the differences. `
+      + `Once continent is taken into account it disappears entirely (p = ${D.stats.regionPValue}). Wasting food at home is a habit-and-planning problem in rich and poor countries alike.`;
+  }
+  regionSel.addEventListener("change", renderScatter);
+  hideEst.addEventListener("change", renderScatter);
+  findInput.addEventListener("input", renderScatter);
+
+  // ---------- Calculator ----------
+  const S = id => document.getElementById(id);
+  const MESS_STUDENTS = 1300, MEALS_PER_STUDENT = 4;
+  const defaults = { "s-meals": 75, "s-rate": 50, "s-days": 365, "s-kg": 0.4, "s-rs": 70 };
+  function renderCalc() {
+    const meals = +S("s-meals").value, rate = +S("s-rate").value / 100, days = +S("s-days").value;
+    const kg = +S("s-kg").value, rs = +S("s-rs").value;
+    S("o-meals").textContent = meals;
+    S("o-rate").textContent = Math.round(rate * 100) + "%";
+    S("o-days").textContent = days;
+    S("o-kg").textContent = kg.toFixed(2);
+    S("o-rs").textContent = "₹" + rs;
+    const saved = meals * days * rate;
+    const lakh = saved * rs / 100000;
+    S("r-rs").textContent = lakh >= 100 ? `₹${fmt(lakh / 100, 2)} crore` : `₹${fmt(lakh, 1)} lakh`;
+    S("r-t").textContent = `${fmt(saved * kg / 1000, 1)} tonnes`;
+    S("r-meals").textContent = fmt(saved);
+
+    // Whole-mess context: 1,300 students x 4 meals a day, at the same cost and days as the sliders
+    const cookedPerDay = MESS_STUDENTS * MEALS_PER_STUDENT;
+    const dayLakh = cookedPerDay * rs / 100000, yearLakh = dayLakh * days;
+    S("t-meals").textContent = `${fmt(cookedPerDay)} meals`;
+    S("t-day").textContent = `₹${fmt(dayLakh, 2)} lakh`;
+    S("t-year").textContent = yearLakh >= 100 ? `₹${fmt(yearLakh / 100, 2)} crore` : `₹${fmt(yearLakh, 1)} lakh`;
+    S("t-share").textContent = `${fmt(saved / (cookedPerDay * days) * 100, 1)}%`;
+  }
+  Object.keys(defaults).forEach(id => S(id).addEventListener("input", renderCalc));
+  S("reset").addEventListener("click", () => { for (const [id, v] of Object.entries(defaults)) S(id).value = v; renderCalc(); });
+
+  // ---------- go ----------
+  function renderAll() { renderCompare(); renderScatter(); }
+  renderAll(); renderCalc();
+  // Redraw whenever a chart's box changes width (window resize, late layout, phone rotation)
+  let rt;
+  const widths = new Map();
+  new ResizeObserver(entries => {
+    const changed = entries.some(e => { const w = Math.round(e.contentRect.width); const old = widths.get(e.target); widths.set(e.target, w); return old !== w; });
+    if (changed) { clearTimeout(rt); rt = setTimeout(renderAll, 80); }
+  }).observe(document.getElementById("compare-chart"));
+  addEventListener("scroll", hideTip, { passive: true });
+})();
+</script>
+</body>
+</html>
